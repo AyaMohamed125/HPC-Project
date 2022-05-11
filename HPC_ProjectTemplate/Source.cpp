@@ -6,12 +6,19 @@
 #include <ctime>// include this header 
 #pragma once
 
+#include<mpi.h>
+#include<stdio.h>
+
 #using <mscorlib.dll>
 #using <System.dll>
 #using <System.Drawing.dll>
 #using <System.Windows.Forms.dll>
 using namespace std;
 using namespace msclr::interop;
+
+
+
+int width, height;
 
 int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of image in w & h
 {
@@ -48,9 +55,10 @@ int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of ima
 		}
 
 	}
+	width = BM.Width;
+	height = BM.Height;
 	return input;
 }
-
 
 void createImage(int* image, int width, int height, int index)
 {
@@ -74,25 +82,72 @@ void createImage(int* image, int width, int height, int index)
 			MyNewImage.SetPixel(j, i, c);
 		}
 	}
-	MyNewImage.Save("..//Data//Output//outputRes" + index + ".png");
+	//MyNewImage.Save("..//Data//Output//outputRes" + index + ".png");
+	MyNewImage.Save("C:\\Users\\ayamo\\Documents\\GitHub\\HPC-Project\\Data\\OutPut" + index + ".png");
 	cout << "result Image Saved " << index << endl;
 }
 
-
 int main()
 {
-	int ImageWidth = 4, ImageHeight = 4;
+	MPI_Init(NULL, NULL);
 
+	int ImageWidth = 4, ImageHeight = 4, sizeOfImage = 256;
 	int start_s, stop_s, TotalTime = 0;
+
+	int size, rank;
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	System::String^ imagePath;
 	std::string img;
-	img = "..//Data//Input//test.png";
+	img = "C:\\Users\\ayamo\\Documents\\GitHub\\HPC-Project\\Data\\Input\\test.png";
 
 	imagePath = marshal_as<System::String^>(img);
 	int* imageData = inputImage(&ImageWidth, &ImageHeight, imagePath);
 
+	int* pixel_intenisties = new int[256]{ 0 };
+	double* probability = new double[256];
+	double* comProbability = new double[256]{ 0 };
+	int* floorComProbability = new int[256];
+	
+	
+	//sequential code
+	if (size == 1)
+	{
+		if (rank == 0)
+		{
+			//step #1
+			for (int i = 0; i < width * height ; i++)
+				pixel_intenisties[imageData[i]]++;
+			
+			//step #2
+			for (int i = 0; i < sizeOfImage; i++)
+				probability[i] = (double)pixel_intenisties[i] / (double)(width * height);
+				
+			//step #3
+			double sum = 0;
+			for (int i = 0; i < sizeOfImage; i++)
+			{
+				sum += probability[i];
+				comProbability[i] = sum;
+			}
 
+			//step #4
+			for (int i = 0; i < sizeOfImage; i++)
+				floorComProbability[i] = floor(comProbability[i] * 256);
+
+			//step #5
+			for (int i = 0; i < width * height; i++)
+				imageData[i] = floorComProbability[imageData[i]];
+		}
+
+	}
+	//parallel code
+	else
+	{
+
+	}
+	MPI_Finalize();
 	start_s = clock();
 	createImage(imageData, ImageWidth, ImageHeight, 0);
 	stop_s = clock();
@@ -100,6 +155,8 @@ int main()
 	cout << "time: " << TotalTime << endl;
 
 	free(imageData);
+	
+
 	return 0;
 
 }

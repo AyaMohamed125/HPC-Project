@@ -1,6 +1,5 @@
 ﻿  Source.cpp
-E:\College years\Sixth term\High Performance\HPC_ProjectTemplate\HPC_ProjectTemplate\Source.cpp(99,65): warning C4244: '+=': conversion from 'double' to 'int', possible loss of data
-  .NETFramework,Version=v4.0.AssemblyAttributes.cpp
-  Generating Code...
+C:\Users\ayamo\Documents\GitHub\HPC-Project\HPC_ProjectTemplate\Source.cpp(137,35): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+C:\Users\ayamo\Documents\GitHub\HPC-Project\HPC_ProjectTemplate\Source.cpp(154,65): warning C4244: '+=': conversion from 'double' to 'int', possible loss of data
   Source.obj : MSIL module encountered; incremental linking is disabled for MSIL; performing full link
-  HPC_ProjectTemplate.vcxproj -> E:\College years\Sixth term\High Performance\HPC_ProjectTemplate\Debug\HPC_ProjectTemplate.exe
+  HPC_ProjectTemplate.vcxproj -> C:\Users\ayamo\Documents\GitHub\HPC-Project\Debug\HPC_ProjectTemplate.exe
