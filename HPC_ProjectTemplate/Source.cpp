@@ -16,8 +16,6 @@
 using namespace std;
 using namespace msclr::interop;
 
-
-
 int width, height;
 
 int* inputImage(int* w, int* h, System::String^ imagePath) //put the size of image in w & h
@@ -109,7 +107,6 @@ int main()
 	double* probability = new double[256];
 	double* comProbability = new double[256]{ 0 };
 	int* floorComProbability = new int[256];
-	
 	
 	//sequential code
 	if (size == 1)
