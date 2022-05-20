@@ -107,7 +107,32 @@ int main()
 	double* probability = new double[256];
 	double* comProbability = new double[256]{ 0 };
 	int* floorComProbability = new int[256];
-	
+	/////////////////////////////////////////////////////////
+	// parallel data
+	int P_pixel_intenistiesLength = (width * height) / size - 1;
+
+	//for step 1,2
+	double* P_pixel_intenisties = new double[P_pixel_intenistiesLength];
+	double* P_pixel_intenistiesArray = new double[256]{ 0 };
+	int* sendCount1 = new int[size] {P_pixel_intenistiesLength};
+	int* displs = new int[size] {0, P_pixel_intenistiesLength, P_pixel_intenistiesLength * 2, P_pixel_intenistiesLength * 3, P_pixel_intenistiesLength * 4, P_pixel_intenistiesLength * 5, P_pixel_intenistiesLength * 6, P_pixel_intenistiesLength * 7};
+	int reminder = (width * height) % size - 1;
+	sendCount1[size - 1] = reminder;
+
+	//for step 3
+	double* Final_P_pixel_intenistiesArray = new double[256]{ 0 };
+	double localSum = 0;
+	double* P_comutative_Probability = new double[256]{ 0 };
+
+	//for step 4 and 5 
+	double* Floor_P_comutative_Probability = new double[256]{ 0 };
+	double* FinalOutputsmall = new double[P_pixel_intenistiesLength] {0};
+	double* FinalOutput = new double[256]{ 0 };
+
+	start_s = clock();
+
+	/////////////////////////////////////////////////////////
+
 	//sequential code
 	if (size == 1)
 	{
@@ -139,11 +164,65 @@ int main()
 		}
 
 	}
-	//parallel code
+	//parallel code////////////////////////////
 	else
 	{
 
+
+		//step 1
+		cout << "FFF\n";
+		MPI_Scatterv(imageData, sendCount1, displs, MPI_INT, P_pixel_intenisties, P_pixel_intenistiesLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		//MPI_Scatter(imageData, P_pixel_intenistiesLength, MPI_DOUBLE, P_pixel_intenisties, P_pixel_intenistiesLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		for (int i = 0; i < P_pixel_intenistiesLength; i++)
+		{
+			P_pixel_intenistiesArray[(int)P_pixel_intenisties[i]]++;
+		}
+		MPI_Reduce(P_pixel_intenistiesArray, Final_P_pixel_intenistiesArray, P_pixel_intenistiesLength, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		if (rank == 0)
+		{
+			for (int i = 0; i < 256; i++)
+			{
+				cout << imageData[i] << " ";
+			}
+		}
+
+		//step 3
+		if (rank == 0)
+		{
+			for (int i = 0; i < 256; i++)
+			{
+				Final_P_pixel_intenistiesArray[i] /= (double)(width * height);
+			}
+			for (int i = 0; i < 256; i++)
+			{
+				localSum += Final_P_pixel_intenistiesArray[i];
+				P_comutative_Probability[i] += localSum;
+			}
+			for (int i = 0; i < 256; i++)
+			{
+				Floor_P_comutative_Probability[i] = floor(P_comutative_Probability[i] * 255);
+			}
+		}
+
+		//step 5 
+		MPI_Scatterv(imageData, sendCount1, displs, MPI_INT, FinalOutputsmall, P_pixel_intenistiesLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		//MPI_Scatter(imageData, P_pixel_intenistiesLength, MPI_DOUBLE, FinalOutputsmall, P_pixel_intenistiesLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		for (int i = 0; i < P_pixel_intenistiesLength; i++)
+		{
+			FinalOutputsmall[i] = Floor_P_comutative_Probability[(int)FinalOutputsmall[i]];
+		}
+		//MPI_Gather(FinalOutputsmall, P_pixel_intenistiesLength, MPI_DOUBLE, FinalOutput, P_pixel_intenistiesLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Gatherv(FinalOutputsmall, P_pixel_intenistiesLength, MPI_DOUBLE, FinalOutput, sendCount1, displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+
+	}//HPC_ProjectTemplate
+
+	if (rank == 0)
+	{
+		createImage(imageData, ImageWidth, ImageHeight, 0);
 	}
+	////////////////////////////////////////////////////////
+
 	MPI_Finalize();
 	start_s = clock();
 	createImage(imageData, ImageWidth, ImageHeight, 0);
